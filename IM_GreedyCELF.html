@@ -13132,7 +13132,7 @@ tags:
 <p>Influence Maximization (IM) is a field of network analysis with an enormous range of applications from viral marketing to disease modelling and public health interventions. IM is the task of finding a small subset of nodes in a network such that the resulting "influence" propagating from that subset reaches the largest number of nodes in the network. "Influence" in this case represents anything that can be passed across connected peers within a network, such as information, behavior, disease or product adoption.</p>
 <p><a href="https://www.cs.cornell.edu/home/kleinber/kdd03-inf.pdf">Kempe et al. (2003)</a> were the first to formalize IM as the following combinatorial optimization problem: Given a network with $N$ nodes and given a "spreading" or propagation process on that network, choose a "seed set" $S$ of size $k$&lt;$N$ to maximize the number of nodes in the network that are ultimately influenced.</p>
 <p>Solving this problem turns out to be extremely computationally burdensome. For example, in a relatively small network of 1,000 nodes, there are ${n\choose k} \approx 8$ trillion different possible candidates of size $k=5$ seed sets, which is impossible to solve directly even on state-of-the-art high performance computing resources. Consequently, a very active literature over the last 15 years has been dedicated to finding approximate solutions to the problem that can be solved quickly. This post walks through how to implement two of the earliest and most fundamental approximation algorithms in Python - the Greedy and the CELF algorithms - and compares their performance.</p>
-<p>We begin by loading a few modules. There are many popular network modelling packages, such as  <a href="https://networkx.github.io/"><code>NetworkX</code></a>, but we will use the <a href="http://igraph.org/python/"><code>igraph</code></a> package in this post to model our networks (in a future post, you can see how this can be done with a simple <a href="https://pandas.pydata.org/"><code>Pandas</code></a> dataframe).</p>
+<p>We begin by loading a few modules. There are many popular network modelling packages, such as  <a href="https://networkx.github.io/"><code>NetworkX</code></a>, but we will use the <a href="http://igraph.org/python/"><code>igraph</code></a> package in this post to model our networks (in a future post, you can see how this can be done with a simple <a href="https://pandas.pydata.org/"><code>pandas</code></a> dataframe).</p>
 
 </div>
 </div>
@@ -13297,7 +13297,7 @@ tags:
 <div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">celf</span><span class="p">(</span><span class="n">gr</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">mc</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>  
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">celf</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">p</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">mc</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>  
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Input: graph object, number of seed nodes</span>
 <span class="sd">    Output: optimal seed set, resulting spread, time for each iteration</span>
@@ -13309,15 +13309,15 @@ tags:
     
     <span class="c1"># Calculate the first iteration sorted list</span>
     <span class="n">marg_gain</span><span class="p">,</span> <span class="n">start_time</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> 
-    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">gr</span><span class="o">.</span><span class="n">vcount</span><span class="p">()):</span>
-        <span class="n">marg_gain</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IC</span><span class="p">(</span><span class="n">gr</span><span class="p">,[</span><span class="n">node</span><span class="p">],</span><span class="n">p</span><span class="p">,</span><span class="n">mc</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">vcount</span><span class="p">()):</span>
+        <span class="n">marg_gain</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IC</span><span class="p">(</span><span class="n">g</span><span class="p">,[</span><span class="n">node</span><span class="p">],</span><span class="n">p</span><span class="p">,</span><span class="n">mc</span><span class="p">))</span>
 
     <span class="c1"># Create the sorted list of nodes and their marginal gain </span>
-    <span class="n">Q</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">gr</span><span class="o">.</span><span class="n">vcount</span><span class="p">()),</span><span class="n">marg_gain</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">vcount</span><span class="p">()),</span><span class="n">marg_gain</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 
     <span class="c1"># Select the first node and remove from candidate list</span>
     <span class="n">S</span><span class="p">,</span> <span class="n">spread</span><span class="p">,</span> <span class="n">SPREAD</span> <span class="o">=</span> <span class="p">[</span><span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span> <span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
-    <span class="n">Q</span><span class="p">,</span> <span class="n">LOOKUPS</span><span class="p">,</span> <span class="n">timelapse</span> <span class="o">=</span> <span class="n">Q</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="p">[</span><span class="n">gr</span><span class="o">.</span><span class="n">vcount</span><span class="p">()],</span> <span class="p">[</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">]</span>
+    <span class="n">Q</span><span class="p">,</span> <span class="n">LOOKUPS</span><span class="p">,</span> <span class="n">timelapse</span> <span class="o">=</span> <span class="n">Q</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">vcount</span><span class="p">()],</span> <span class="p">[</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">]</span>
     
     <span class="c1"># --------------------</span>
     <span class="c1"># Find the next k-1 nodes using the list-sorting procedure</span>
@@ -13336,7 +13336,7 @@ tags:
             <span class="n">current</span> <span class="o">=</span> <span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             
             <span class="c1"># Evaluate the spread function and store the marginal gain in the list</span>
-            <span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">current</span><span class="p">,</span><span class="n">IC</span><span class="p">(</span><span class="n">gr</span><span class="p">,</span><span class="n">S</span><span class="o">+</span><span class="p">[</span><span class="n">current</span><span class="p">],</span><span class="n">p</span><span class="p">,</span><span class="n">mc</span><span class="p">)</span> <span class="o">-</span> <span class="n">spread</span><span class="p">)</span>
+            <span class="n">Q</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">current</span><span class="p">,</span><span class="n">IC</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="n">S</span><span class="o">+</span><span class="p">[</span><span class="n">current</span><span class="p">],</span><span class="n">p</span><span class="p">,</span><span class="n">mc</span><span class="p">)</span> <span class="o">-</span> <span class="n">spread</span><span class="p">)</span>
 
             <span class="c1"># Re-sort the list</span>
             <span class="n">Q</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
@@ -14101,7 +14101,7 @@ greedy output: [94, 61, 79, 90, 97, 15, 60, 20, 69, 88]
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Computation Time (Seconds)&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Size of Seed Set&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Computation Time&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="s1">&#39;off&#39;</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">left</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 
@@ -14193,7 +14193,7 @@ greedy output: [94, 61, 79, 90, 97, 15, 60, 20, 69, 88]
 <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Expected Spread&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Expected Spread&#39;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Size of Seed Set&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">left</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 
@@ -14234,7 +14234,7 @@ greedy output: [94, 61, 79, 90, 97, 15, 60, 20, 69, 88]
 <li>The CELF algorithm runs a lot faster for any seed set $k&gt;1$.</li>
 <li>The speed arises from the fact that after the first round, CELF performs far fewer spread computations than Greedy.</li>
 </ul>
-<p>The source code for this post is available at <a href="https://github.com/hautahi/IM_GreedyCELF">this Github respository</a>.</p>
+<p>The source code for this post is available at its <a href="https://github.com/hautahi/IM_GreedyCELF">Github repository</a>.</p>
 
 </div>
 </div>

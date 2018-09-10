@@ -17,7 +17,7 @@ Influence Maximization (IM) is a field of network analysis with an enormous rang
 
 Solving this problem turns out to be extremely computationally burdensome. For example, in a relatively small network of 1,000 nodes, there are ${n\choose k} \approx 8$ trillion different possible candidates of size $k=5$ seed sets, which is impossible to solve directly even on state-of-the-art high performance computing resources. Consequently, a very active literature over the last 15 years has been dedicated to finding approximate solutions to the problem that can be solved quickly. This post walks through how to implement two of the earliest and most fundamental approximation algorithms in Python - the Greedy and the CELF algorithms - and compares their performance.
 
-We begin by loading a few modules. There are many popular network modelling packages, such as  [`NetworkX`](https://networkx.github.io/), but we will use the [`igraph`](http://igraph.org/python/) package in this post to model our networks (in a future post, you can see how this can be done with a simple [`Pandas`](https://pandas.pydata.org/) dataframe).
+We begin by loading a few modules. There are many popular network modelling packages, such as  [`NetworkX`](https://networkx.github.io/), but we will use the [`igraph`](http://igraph.org/python/) package in this post to model our networks (in a future post, you can see how this can be done with a simple [`pandas`](https://pandas.pydata.org/) dataframe).
 
 
 ```python
@@ -138,7 +138,7 @@ Like `greedy()`, the function returns the optimal seed set, the resulting spread
 
 
 ```python
-def celf(gr,k,p=0.1,mc=1000):  
+def celf(g,k,p=0.1,mc=1000):  
     """
     Input: graph object, number of seed nodes
     Output: optimal seed set, resulting spread, time for each iteration
@@ -150,15 +150,15 @@ def celf(gr,k,p=0.1,mc=1000):
     
     # Calculate the first iteration sorted list
     marg_gain, start_time = [], time.time() 
-    for node in range(gr.vcount()):
-        marg_gain.append(IC(gr,[node],p,mc))
+    for node in range(g.vcount()):
+        marg_gain.append(IC(g,[node],p,mc))
 
     # Create the sorted list of nodes and their marginal gain 
-    Q = sorted(zip(range(gr.vcount()),marg_gain), key=lambda x: x[1],reverse=True)
+    Q = sorted(zip(range(g.vcount()),marg_gain), key=lambda x: x[1],reverse=True)
 
     # Select the first node and remove from candidate list
     S, spread, SPREAD = [Q[0][0]], Q[0][1], [Q[0][1]]
-    Q, LOOKUPS, timelapse = Q[1:], [gr.vcount()], [time.time()-start_time]
+    Q, LOOKUPS, timelapse = Q[1:], [g.vcount()], [time.time()-start_time]
     
     # --------------------
     # Find the next k-1 nodes using the list-sorting procedure
@@ -177,7 +177,7 @@ def celf(gr,k,p=0.1,mc=1000):
             current = Q[0][0]
             
             # Evaluate the spread function and store the marginal gain in the list
-            Q[0] = (current,IC(gr,S+[current],p,mc) - spread)
+            Q[0] = (current,IC(g,S+[current],p,mc) - spread)
 
             # Re-sort the list
             Q = sorted(Q, key = lambda x: x[1], reverse = True)
@@ -293,7 +293,7 @@ ax.legend(loc=2)
 plt.ylabel('Computation Time (Seconds)')
 plt.xlabel('Size of Seed Set')
 plt.title('Computation Time')
-plt.tick_params(bottom='off', left='off')
+plt.tick_params(bottom = False, left = False)
 plt.show()
 ```
 
@@ -324,7 +324,7 @@ ax.legend(loc=2)
 plt.ylabel('Expected Spread')
 plt.title('Expected Spread')
 plt.xlabel('Size of Seed Set')
-plt.tick_params(bottom=False, left=False)
+plt.tick_params(bottom = False, left = False)
 plt.show()
 ```
 
@@ -341,4 +341,4 @@ We implemented both the Greedy and CELF algorithms as simple Python functions an
 - The CELF algorithm runs a lot faster for any seed set $k>1$.
 - The speed arises from the fact that after the first round, CELF performs far fewer spread computations than Greedy.
 
-The source code for this post is available at [this Github respository](https://github.com/hautahi/IM_GreedyCELF).
+The source code for this post is available at its [Github repository](https://github.com/hautahi/IM_GreedyCELF).
