@@ -11,13 +11,13 @@ tags:
 
 <center> <h1>Influence Maximization in Python - Greedy vs. CELF</h1> </center>
 
-Influence Maximization (IM) is a field of network analysis with an enormous range of applications from viral marketing to disease modelling and public health interventions. IM is the task of finding a small subset of nodes in a network such that the resulting "influence" propagating from that subset reaches the largest number of nodes in the network. "Influence" in this case represents anything that can be passed across connected peers within a network, such as information, behavior, disease or product adoption.
+Influence Maximization (IM) is a field of network analysis with a lot of applications - from viral marketing to disease modelling and public health interventions. IM is the task of finding a small subset of nodes in a network such that the resulting "influence" propagating from that subset reaches the largest number of nodes in the network. "Influence" represents anything that can be passed across connected peers within a network, such as information, behavior, disease or product adoption.
 
-[Kempe et al. (2003)](https://www.cs.cornell.edu/home/kleinber/kdd03-inf.pdf) were the first to formalize IM as the following combinatorial optimization problem: Given a network with $N$ nodes and given a "spreading" or propagation process on that network, choose a "seed set" $S$ of size $k$<$N$ to maximize the number of nodes in the network that are ultimately influenced.
+[Kempe et al. (2003)](https://www.cs.cornell.edu/home/kleinber/kdd03-inf.pdf) were the first to formalize IM as the following combinatorial optimization problem: Given a network with $n$ nodes and given a "spreading" or propagation process on that network, choose a "seed set" $S$ of size $k<n$ to maximize the number of nodes in the network that are ultimately influenced.
 
-Solving this problem turns out to be extremely computationally burdensome. For example, in a relatively small network of 1,000 nodes, there are ${n\choose k} \approx 8$ trillion different possible candidates of size $k=5$ seed sets, which is impossible to solve directly even on state-of-the-art high performance computing resources. Consequently, a very active literature over the last 15 years has been dedicated to finding approximate solutions to the problem that can be solved quickly. This post walks through how to implement two of the earliest and most fundamental approximation algorithms in Python - the Greedy and the CELF algorithms - and compares their performance.
+Solving this problem turns out to be extremely computationally burdensome. For example, in a relatively small network of 1,000 nodes, there are ${n\choose k} \approx 8$ trillion different possible candidates of size $k=5$ seed sets, which is impossible to solve directly even on state-of-the-art high performance computing resources. Consequently, a very active literature over the last 15 years has tried to find approximate solutions to the problem that can be solved quickly. This post walks through how to implement two of the earliest and most fundamental approximation algorithms in Python - the Greedy and the CELF algorithms - and compares their performance.
 
-We begin by loading a few modules. There are many popular network modelling packages, such as  [`NetworkX`](https://networkx.github.io/), but we will use the [`igraph`](http://igraph.org/python/) package in this post to model our networks (in a future post, you can see how this can be done with a simple [`pandas`](https://pandas.pydata.org/) dataframe).
+We begin by loading a few modules. There are many popular network modelling packages, but we'll use the [`igraph`](http://igraph.org/python/) package (in a future post, you can see how this can be done with a simple [`pandas`](https://pandas.pydata.org/) dataframe).
 
 
 ```python
@@ -32,7 +32,7 @@ from igraph import *
 
 ## Spread Process - Independent Cascade
 
-IM algorithms solve the optimization problem for a given spread or propagation process. We therefore first need to specify a function that simulates the spread from a given seed set across the network. We'll simulate the influence spread using the popular "Independent Cascade" model, although there are many others we could have chosen, such as the Linear Threshold model. The `IC()` function describing the spread process is presented below.
+IM algorithms solve the optimization problem for a given spread or propagation process. We therefore first need to specify a function that simulates the spread from a given seed set across the network. We'll simulate the influence spread using the popular "Independent Cascade" model, although there are many others we could have chosen. The `IC()` function describing the spread process is presented below.
 
 
 ```python
@@ -49,7 +49,7 @@ def IC(g,S,p=0.5,mc=1000):
         
         # Simulate propagation process      
         new_active, A = S[:], S[:]
-        while len(new_active) > 0:
+        while new_active:
 
             # For each newly active node, find its neighbors that become activated
             new_ones = []
@@ -72,15 +72,15 @@ def IC(g,S,p=0.5,mc=1000):
 
 We calculate the expected spread of a given seed set by taking the average over a large number (`mc`) of Monte Carlo simulations. The outer loop in the `IC()` function iterates over each of these simulations and stores each calculated spread in the `spread` list. The mean of each of these entries, which is a consistent and unbiased estimator for the expected spread of the seed set `S`, is then returned as the function output.
 
-Within each Monte Carlo iteration, we simulate the spread of influence throughout the network over time, where a different "time period" occurs within each of the `while` loop iterations, which simply checks whether any new nodes were activated in the previous time step. If no new nodes were activated (`while len(new_active) == 0`) then the independent cascade process terminates, and the function moves onto the next simulation after storing the total spread, which is simply the number of nodes ultimately activated (some algorithms are framed in terms of the "additional spread" in which case we would subtract the size of the seed set so that the function would be ammended to `spread.append(len(A)-len(S))`. 
+Within each Monte Carlo iteration, we simulate the spread of influence throughout the network over time, where a different "time period" occurs within each of the `while` loop iterations, which simply checks whether any new nodes were activated in the previous time step. If no new nodes were activated (when `new_active` is an empty list and therefore evaluates to `False`) then the independent cascade process terminates, and the function moves onto the next simulation after storing the total spread, which is simply the number of nodes ultimately activated (some algorithms are framed in terms of the "additional spread" in which case we would subtract the size of the seed set so that the function would be ammended to `spread.append(len(A)-len(S))`. 
 
-The third loop performs the actual propagation process on the graph object `g`. For each `node` that was newly activated in the previous time step, we construct a vector `success` where each entry indicates whether each of `node`'s out-neighbors is activated by comparing a uniform random draw with the propagation probability `p`. (The `np.random.seed(i)` function is used to ensure consistency of results when comparing the processes below.) Those nodes that are successfully activated (`new_ones`) are then selected and if some are not already included within the active set `A` they are added.
+The third loop performs the actual propagation process on the graph object `g`. For each `node` that was newly activated in the previous time step, we construct a vector array `success` where each entry indicates whether each of `node`'s out-neighbors is activated by comparing a uniform random draw with the propagation probability `p`. (The `np.random.seed(i)` function is used to ensure consistency of results when comparing the processes below.) Those nodes that are successfully activated (`new_ones`) are then selected and if some are not already included within the active set `A` they are added.
 
 ## Greedy Algorithm
 
 With our spread function `IC()` in hand, we can now turn to the IM algorithms themselves. We begin with the **Greedy** algorithm proposed in the seminal [Kempe et al. (2003)](https://www.cs.cornell.edu/home/kleinber/kdd03-inf.pdf) paper. This basically finds the node with the biggest spread, adds it to the seed set and then finds the node with the next biggest marginal spread over and above the spread of the original and so on until $k$ seed nodes are found.
 
-This algorithm only needs to calculate the spread of $\sum_{i=0}^k (N-i)\approx kN$ nodes, which is just 5,000 in the case of our 1,000 node and $k=5$ network (a lot less that 8 trillion!). Of course, this computational improvement comes at the cost of the resulting seed set only being an approximate solution to the IM problem because it only considers the incremental spread of the $k$ nodes individually rather than combined. Fortunately, however, the authors show that the algorithm is theoretically guaranteed to choose a seed set whose spread will be at least 63% of the spread of the optimal seed set. No better theoretically proved approximation has been found (and in fact, most of the algorithms proposed in the literature don't have any theoretical guarantees). The proof of the guarantee is in the paper, but it relies heavily on the "submodular" property of spread functions, which is a kind of set function analogue of concavity, and will be explained in more detail below when we look at the CELF algorithm.
+This algorithm only needs to calculate the spread of $\sum_{i=0}^k (n-i)\approx kn$ nodes, which is just 5,000 in the case of our 1,000 node and $k=5$ network (a lot less that 8 trillion!). Of course, this computational improvement comes at the cost of the resulting seed set only being an approximate solution to the IM problem because it only considers the incremental spread of the $k$ nodes individually rather than combined. Fortunately, however, the authors show that the algorithm is theoretically guaranteed to choose a seed set whose spread will be at least 63% of the spread of the optimal seed set. No better theoretically proved approximation has been found (and in fact, most of the algorithms proposed in the literature don't have any theoretical guarantees). The proof of the guarantee is in the paper, but it relies heavily on the "submodular" property of spread functions, which is a kind of set function analogue of concavity, and will be explained in more detail below when we look at the CELF algorithm.
 
 The following `greedy()` function implements the algorithm. It produces the optimal set of `k` seed nodes for the graph `g`, and is explained in more detail below.
 
@@ -88,7 +88,7 @@ The following `greedy()` function implements the algorithm. It produces the opti
 ```python
 def greedy(g,k,p=0.1,mc=1000):
     """
-    Input: graph object, number of seed nodes
+    Input:  graph object, number of seed nodes
     Output: optimal seed set, resulting spread, time for each iteration
     """
 
@@ -98,21 +98,21 @@ def greedy(g,k,p=0.1,mc=1000):
     for _ in range(k):
 
         # Loop over nodes that are not yet in seed set to find biggest marginal gain
-        count, rangelist = 0, list(set(range(g.vcount()))-set(S))
-        for j in rangelist:
+        best_spread = 0
+        for j in set(range(g.vcount()))-set(S):
 
             # Get the spread
             s = IC(g,S + [j],p,mc)
 
             # Update the winning node and spread so far
-            if s > count:
-                count, node = s, j
+            if s > best_spread:
+                best_spread, node = s, j
 
         # Add the selected node to the seed set
         S.append(node)
         
         # Add estimated spread and elapsed time
-        spread.append(count)
+        spread.append(best_spread)
         timelapse.append(time.time() - start_time)
 
     return(S,spread,timelapse)
@@ -120,7 +120,7 @@ def greedy(g,k,p=0.1,mc=1000):
 
 The `greedy()` function performs the same operation for all $k$ iterations of the outer `for` loop. Specifically, it calculates the marginal spread for all remaining candidate nodes and then selects the node with the highest spread.
 
-The calculation of the spread for all nodes takes place in the inner `for` loop that iterates over the nodes in `rangelist`, which is computed by subtracting the nodes in the current seed set from the full set of nodes `g.vcount()`. Within each iteration, the marginal spread is computed by calling the `IC()` function, where the input seed set is equal to the union of `S` and the current node `j`. The marginal spread for `j` is then compared to the largest spread in the loop so far (`count`) and if it is greater, then that node becomes the current "leader".
+The calculation of the spread for all nodes takes place in the inner `for` loop that iterates over the nodes in `rangelist`, which is computed by subtracting the nodes in the current seed set from the full set of nodes `g.vcount()`. Within each iteration, the marginal spread is computed by calling the `IC()` function, where the input seed set is equal to the union of `S` and the current node `j`. The marginal spread for `j` is then compared to the largest spread in the loop so far (`best_spread`) and if it is greater, then that node becomes the current "leader".
 
 The function not only returns the optimal seed set `S` but also the average spread of that seed set along with a list showing the cumulative time taken to complete each iteration (which we'll compare with CELF below).
 
@@ -140,7 +140,7 @@ Like `greedy()`, the function returns the optimal seed set, the resulting spread
 ```python
 def celf(g,k,p=0.1,mc=1000):  
     """
-    Input: graph object, number of seed nodes
+    Input:  graph object, number of seed nodes
     Output: optimal seed set, resulting spread, time for each iteration
     """
       
@@ -149,9 +149,8 @@ def celf(g,k,p=0.1,mc=1000):
     # --------------------
     
     # Calculate the first iteration sorted list
-    marg_gain, start_time = [], time.time() 
-    for node in range(g.vcount()):
-        marg_gain.append(IC(g,[node],p,mc))
+    start_time = time.time() 
+    marg_gain = [IC(g,[node],p,mc) for node in range(g.vcount())]
 
     # Create the sorted list of nodes and their marginal gain 
     Q = sorted(zip(range(g.vcount()),marg_gain), key=lambda x: x[1],reverse=True)
@@ -248,12 +247,11 @@ Now that we know that both alorithms at least work correctly for a simple networ
 
 ```python
 # Generate Graph
-G = Graph.Erdos_Renyi(n=100,m=300)
+G = Graph.Erdos_Renyi(n=100,m=300,directed=True)
 
 # Plot Graph
-layout = G.layout("kk")
 G.es["color"], G.vs["color"], G.vs["label"] = "#B3CDE3", "#FBB4AE", ""
-plot(G, bbox = (300, 300),margin = 11,layout = layout)
+plot(G, bbox = (300, 300),margin = 11,layout = G.layout("kk"))
 ```
 
 
