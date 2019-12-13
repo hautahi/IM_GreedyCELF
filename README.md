@@ -18,3 +18,5 @@ Within this file, there is a method `_repr_svw_()` that we need to edit. At appr
 Other Notes
 - List the kernels available to jupyter with `$ jupyter kernelspec list`
 - Remove a kernel with `$ jupyter kernelspec uninstall environment_name`
+- List virtual enviroments with `$ lsvirtualenv`
+- Remove a virtual enviroment with `$ rmvirtualenv environment_name`
