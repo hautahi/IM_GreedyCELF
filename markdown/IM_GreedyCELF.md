@@ -1,4 +1,3 @@
-
 <!---
 layout: post
 title: Influence Maximization in Python - Greedy vs CELF
@@ -17,7 +16,7 @@ Influence Maximization (IM) is a field of network analysis with a lot of applica
 
 Solving this problem turns out to be extremely computationally burdensome. For example, in a relatively small network of 1,000 nodes, there are ${n\choose k} \approx 8$ trillion different possible candidates of size $k=5$ seed sets, which is impossible to solve directly even on state-of-the-art high performance computing resources. Consequently, a very active literature over the last 15 years has tried to find approximate solutions to the problem that can be solved quickly. This post walks through how to implement two of the earliest and most fundamental approximation algorithms in Python - the Greedy and the CELF algorithms - and compares their performance.
 
-We begin by loading a few modules. There are many popular network modelling packages, but we'll use the [`igraph`](http://igraph.org/python/) package (in a future post, you can see how this can be done with a simple [`pandas`](https://pandas.pydata.org/) dataframe).
+We begin by loading some packages. There are many popular network modelling packages, but we'll use [`igraph`](http://igraph.org/python/) (in the [next post](https://hautahi.com/im_ris), I use a simple [`pandas`](https://pandas.pydata.org/) dataframe approach instead and in a [later post](https://hautahi.com/ic_comparison), I compare a range of approaches and packages).
 
 
 ```python
@@ -55,7 +54,7 @@ def IC(g,S,p=0.5,mc=1000):
             new_ones = []
             for node in new_active:
                 
-                # Determine those neighbors that become infected
+                # Determine neighbors that become infected
                 np.random.seed(i)
                 success = np.random.uniform(0,1,len(g.neighbors(node,mode="out"))) < p
                 new_ones += list(np.extract(success, g.neighbors(node,mode="out")))
@@ -228,8 +227,8 @@ With this graph in hand we can now run each of the algorithms, which both manage
 
 ```python
 # Run algorithms
-celf_output   = celf(g,2,p=0.2,mc=1000)
-greedy_output = greedy(g,2,p=0.2,mc=1000)
+celf_output   = celf(g,2,p = 0.2,mc = 1000)
+greedy_output = greedy(g,2,p = 0.2,mc = 1000)
 
 # Print results
 print("celf output:   " + str(celf_output[0]))
@@ -266,33 +265,33 @@ We now run each of the algorithms to solve for a seed set of size $k=10$ and we 
 
 ```python
 # Run algorithms
-celf_output   = celf(G,10,p=0.1,mc=1000)
-greedy_output = greedy(G,10,p=0.1,mc=1000)
+celf_output   = celf(G,10,p = 0.1,mc = 1000)
+greedy_output = greedy(G,10,p = 0.1,mc = 1000)
 
 # Print resulting seed sets
 print("celf output:   " + str(celf_output[0]))
 print("greedy output: " + str(greedy_output[0]))
 ```
 
-    celf output:   [94, 61, 79, 90, 97, 15, 60, 20, 69, 88]
-    greedy output: [94, 61, 79, 90, 97, 15, 60, 20, 69, 88]
+    celf output:   [81, 42, 37, 9, 0, 39, 66, 86, 67, 50]
+    greedy output: [81, 42, 37, 9, 0, 39, 66, 86, 67, 50]
 
 
 We now compare the speed of each algorithm. The plot below shows that the computation time of Greedy is larger than CELF for all seed set sizes greater than 1 and the difference in computational times grows exponenitally with the size of the seed set. This is because Greedy must compute the spread of $N-i-1$ nodes in iteration $i$ whereas CELF generally performs far fewer spread computations after the first iteration.
 
 
 ```python
+# Plot settings
+plt.rcParams['figure.figsize'] = (9,6)
+plt.rcParams['lines.linewidth'] = 4
+plt.rcParams['xtick.bottom'] = False
+plt.rcParams['ytick.left'] = False
+
 # Plot Computation Time
-fig = plt.figure(figsize=(9,6))
-ax  = fig.add_subplot(111)
-ax.plot(range(1,len(greedy_output[2])+1),greedy_output[2],label="Greedy",color="#FBB4AE",lw=4)
-ax.plot(range(1,len(celf_output[2])+1),celf_output[2],label="CELF",color="#B3CDE3",lw=4)
-ax.legend(loc=2)
-plt.ylabel('Computation Time (Seconds)')
-plt.xlabel('Size of Seed Set')
-plt.title('Computation Time')
-plt.tick_params(bottom = False, left = False)
-plt.show()
+plt.plot(range(1,len(greedy_output[2])+1),greedy_output[2],label="Greedy",color="#FBB4AE")
+plt.plot(range(1,len(celf_output[2])+1),celf_output[2],label="CELF",color="#B3CDE3")
+plt.ylabel('Computation Time (Seconds)'); plt.xlabel('Size of Seed Set')
+plt.title('Computation Time'); plt.legend(loc=2);
 ```
 
 
@@ -314,16 +313,10 @@ Finally, we plot the resulting expected spread for each seed set size. Of course
 
 ```python
 # Plot Expected Spread by Seed Set Size
-fig = plt.figure(figsize=(9,6))
-ax = fig.add_subplot(111)
-ax.plot(range(1,len(greedy_output[1])+1),greedy_output[1],label="Greedy",color="#FBB4AE",lw=4)
-ax.plot(range(1,len(celf_output[1])+1),celf_output[1],label="CELF",color="#B3CDE3",lw=4)
-ax.legend(loc=2)
-plt.ylabel('Expected Spread')
-plt.title('Expected Spread')
-plt.xlabel('Size of Seed Set')
-plt.tick_params(bottom = False, left = False)
-plt.show()
+plt.plot(range(1,len(greedy_output[1])+1),greedy_output[1],label="Greedy",color="#FBB4AE")
+plt.plot(range(1,len(celf_output[1])+1),celf_output[1],label="CELF",color="#B3CDE3")
+plt.xlabel('Size of Seed Set'); plt.ylabel('Expected Spread')
+plt.title('Expected Spread'); plt.legend(loc=2);
 ```
 
 
@@ -339,4 +332,4 @@ We implemented both the Greedy and CELF algorithms as simple Python functions an
 - The CELF algorithm runs a lot faster for any seed set $k>1$.
 - The speed arises from the fact that after the first round, CELF performs far fewer spread computations than Greedy.
 
-The source code for this post is available at its [Github repository](https://github.com/hautahi/IM_GreedyCELF).
+The source code for this post is available at its [Github repository](https://github.com/hautahi/IM_GreedyCELF), where you'll also find instructions on how to install igraph plotting functionalities, which a lot of people including myself have run into trouble with.
