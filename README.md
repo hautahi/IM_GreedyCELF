@@ -4,10 +4,11 @@ Jupyter Notebook source code for a [blog post](https://hautahi.com/im_greedycelf
 
 ## Installing igraph
 
-I've often run into trouble getting the igraph package successfully plotting the igraph objects. This is quite a common problem, so the following is the installation method that I use, including my virtual environment setup:
+I've often run into trouble getting the igraph package successfully plotting the igraph objects. This is quite a common problem, so the following is the installation method that I use in the bash shell of my mac, including my virtual environment setup:
 
-- Create a new virtual environment with the following in bash: `$ mkvirtualenv -p pythonX environment_name`
-- Install the relevant packages `$ pip install matplotlib pandas numpy python-igraph jupyterlab cairocffi`
+- Install pycairo: `$ brew install py2cairo`
+- Create a new virtual environment: `$ mkvirtualenv -p pythonX environment_name`
+- Install the relevant python packages: `$ pip install matplotlib pandas numpy python-igraph jupyterlab cairocffi`
 - Add the environment to the jupyter notebook: `$ python -m ipykernel install --name=environment_name`
 
 The above should successfully install the package with Python 2. But for Python 3 code, there's another very annoying step. We need to edit a particular igraph package source file. Its location will differ depending on your machine setup, but mine is located at `~/Envs/environment_name/lib/python3.7/site-packages/igraph/drawing/__init__.py`.
